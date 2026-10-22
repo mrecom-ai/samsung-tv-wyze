@@ -1,0 +1,17 @@
+.local/
+dist/
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.env.*
+*.p12
+*.pfx
+*.pem
+*.key
+*.wgt
+*.tpk
+profiles.xml
+credentials*.json
+tokens*.json

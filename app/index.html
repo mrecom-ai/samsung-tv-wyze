@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=1920"><title>Camera View</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header><span class="mark">◉</span><span>Camera View</span><span class="tag">WYZE · PREVIEW</span><button id="signout" hidden>Sign out</button></header>
+<main>
+<section id="login">
+  <div class="intro"><p class="eyebrow">YOUR CAMERAS, ON YOUR TV</p><h1>A quick look<br>at home.</h1><p>Sign in to Wyze to choose a camera.</p><p class="small">First time? Create your API ID and key at<br>developer-api-console.wyze.com</p></div>
+  <form id="authform" autocomplete="off">
+    <label for="email">Wyze email</label><input id="email" type="email" autocomplete="off" spellcheck="false" required>
+    <label for="password">Password</label><input id="password" type="password" autocomplete="off" required>
+    <div class="columns"><div><label for="keyid">API ID</label><input id="keyid" autocomplete="off" spellcheck="false" required></div><div><label for="apikey">API key</label><input id="apikey" type="password" autocomplete="off" spellcheck="false" required></div></div>
+    <label class="remember"><input id="remember" type="checkbox" checked> Keep me signed in on this TV</label>
+    <button id="submit" type="submit" class="primary">Sign in</button> <button id="receive" type="button">Receive from Mac</button><p class="small">Password and API key are not saved. Signing out removes the saved session.</p>
+  </form>
+</section>
+<section id="mfa" hidden><h1>One more step.</h1><p id="mfahelp"></p><form id="mfaform"><label for="code">Verification code</label><input id="code" inputmode="numeric" autocomplete="one-time-code" required><button class="primary" type="submit">Verify</button><button id="cancelmfa" type="button">Cancel</button></form></section>
+<section id="cameras" hidden><div class="sectionhead"><div><p class="eyebrow">LIVE VIEW</p><h1>Your cameras.</h1></div><div class="viewbuttons"><button id="two">Two cameras</button><button id="all">All cameras</button><button id="watchSelected" hidden>Watch selected</button><button id="cancelSelection" hidden>Cancel</button><button id="refresh">Refresh</button></div></div><div id="grid"></div></section>
+<section id="player" hidden><video id="video" autoplay playsinline muted></video><div class="playerbar"><button id="back">← Cameras</button><h2 id="cameraTitle"></h2><button id="audio">Sound off</button><button id="retry">Reconnect</button></div></section>
+<section id="wall" hidden><div class="wallbar"><button id="wallBack">← Cameras</button><h2 id="wallTitle">All cameras</h2><button id="wallSound">Sound: Off</button></div><div id="wallGrid"></div><div id="audioPicker" role="dialog" aria-modal="true" aria-labelledby="audioTitle" hidden><div class="audioPanel"><h2 id="audioTitle">Choose sound</h2><p>Listen to one camera at a time.</p><div id="audioChoices" role="radiogroup" aria-label="Camera sound source"></div><button id="audioClose">Done</button></div></div></section>
+<p id="status" role="status" aria-live="polite">Ready to sign in.</p>
+</main><footer>Arrow keys to move · OK to select · Back to return</footer>
+<script src="vendor/crypto-js.js"></script><script src="vendor/nacl-fast.min.js"></script><script src="runtime-config.js"></script><script src="provisioning.js"></script><script src="diagnostics.js"></script><script src="api.js"></script><script src="sdp.js"></script><script src="stream.js"></script><script src="wall.js"></script><script src="main.js"></script>
+</body></html>

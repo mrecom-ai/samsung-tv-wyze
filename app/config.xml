@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="https://wyze-samsung-tv.local/app" version="0.1.5" viewmodes="maximized">
+  <tizen:application id="WyzeTVView.Camera" package="WyzeTVView" required_version="9.0"/>
+  <content src="index.html"/>
+  <name>Camera View</name>
+  <icon src="icon.png"/>
+  <tizen:profile name="tv-samsung"/>
+  <tizen:privilege name="http://tizen.org/privilege/internet"/>
+  <access origin="https://auth-prod.api.wyze.com" subdomains="false"/>
+  <access origin="https://api.wyzecam.com" subdomains="false"/>
+  <access origin="https://app.wyzecam.com" subdomains="false"/>
+  <access origin="https://wyzecam.com" subdomains="true"/>
+  <access origin="wss://wyzecam.com" subdomains="true"/>
+  <access origin="wss://amazonaws.com" subdomains="true"/>
+  <tizen:content-security-policy>default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://auth-prod.api.wyze.com https://api.wyzecam.com https://app.wyzecam.com https://*.wyzecam.com wss://*.wyzecam.com wss://*.amazonaws.com; media-src 'self' blob:; img-src 'self'; object-src 'none';</tizen:content-security-policy>
+  <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable"/>
+</widget>
