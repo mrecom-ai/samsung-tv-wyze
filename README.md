@@ -9,6 +9,62 @@ Raspberry Pi, computer video relay, or phone mirroring is required. A computer
 is needed to build/install the app, and optionally to paste credentials during
 initial setup. Root access and changes to Samsung Home are **not required**.
 
+## See it on screen
+
+These are browser captures of the actual app interface at its 1920 × 1080 TV
+layout, with **illustrated demo scenes in place of camera video**. They are not
+photos of a TV or live camera footage. Names and scenes are fictional; no account
+or credentials were used. See [how these previews were made](docs/screenshots/README.md).
+
+**All cameras, with one camera supplying sound**
+
+![Four-camera interface preview with illustrated demo feeds and Front porch selected for sound](docs/screenshots/all-cameras.png)
+
+| Two cameras side by side | Choose which camera you hear |
+| --- | --- |
+| ![Two-camera interface preview with illustrated demo scenes](docs/screenshots/two-cameras.png) | ![Sound menu with Off and four demo camera names](docs/screenshots/sound-selection.png) |
+
+<details>
+<summary>Sign-in screen</summary>
+
+![Camera View sign-in screen with empty email, password, API ID and API key fields](docs/screenshots/sign-in.png)
+
+</details>
+
+## Let GPT-6.1 SOL handle the setup work
+
+You can open a local clone of this repository in **Codex**, select **GPT-6.1 SOL**
+if it is available to your account, and ask it to handle the setup work: check
+prerequisites, run tests, prepare the encrypted credential handoff, build/sign
+the widget and install it on your TV. Run it on a computer that can reach the
+TV on your local network. Simply opening the GitHub page does not grant TV access.
+
+For the Codex CLI, start inside the cloned repository with:
+
+```sh
+codex --model gpt-6.1-sol
+```
+
+Then give it this prompt:
+
+```text
+Read this README and docs/SECURITY.md, then help me get Camera View running on
+my Samsung TV. Handle the computer-side work end to end: check compatibility
+and prerequisites, run the checks, prepare the optional encrypted setup page,
+build with my own Samsung certificate, install and launch the app, and help
+verify single/two/all-camera video and sound selection. Ask me for my TV model,
+Tizen version and network address when needed. Guide me through Developer Mode,
+certificate/account sign-in, and physical TV steps that need my input. Keep
+credentials out of chat, command arguments, logs and Git; let me enter them in
+the private setup form. Do not root the TV or modify Samsung services.
+```
+
+You still handle TV menu changes, Samsung sign-in/certificate passwords, Wyze
+credentials and verification, and confirming the picture/sound on your TV.
+Model availability and tool permissions vary; an agent cannot guarantee support
+for an untested TV. See OpenAI's [model selection documentation](https://learn.chatgpt.com/docs/models)
+for the exact model name and availability.
+
 ## What has actually been tested
 
 - A **2025 Samsung U7900F running Tizen 9**, with **Wyze Cam OG** cameras.
@@ -174,3 +230,21 @@ download; sign your own build with a certificate authorized for your TV.
 
 MIT license. See [third-party notices](THIRD_PARTY_NOTICES.md) for upstream credit
 and bundled dependency licenses. Samsung and Wyze do not endorse this project.
+
+## How this started / Samsung TV credits
+
+This project grew out of exploring how to make a Samsung TV more useful and
+less cluttered. These were the starting points shared during that exploration:
+
+- [Nathan Clark's original X post](https://x.com/nathanclark/status/2112416625496576455)
+  started the Samsung TV investigation.
+- [The follow-up X post from @log4j](https://x.com/log4j/status/2113028209612644795)
+  was shared during the Samsung privacy and unwanted-services discussion.
+- [chris-ritsen/samsung-tv-root](https://github.com/chris-ritsen/samsung-tv-root)
+  supplied the community research and tooling behind the separate Samsung TV
+  customization work that led here. Thanks to its author and contributors.
+
+Those links are background and credit. **Camera View itself only needs the
+developer installation described above; rooting and debloating are not part of
+this app's installation.** Wyze API and dependency credits are listed separately
+in [third-party notices](THIRD_PARTY_NOTICES.md).
