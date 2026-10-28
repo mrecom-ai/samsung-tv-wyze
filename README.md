@@ -168,7 +168,11 @@ use a trusted LAN and do not forward its ports or the setup port to the internet
 
 - **Single camera:** select a camera tile. Back returns to the camera list.
 - **Two cameras:** select Two cameras, choose exactly two tiles, then Watch selected.
-- **All cameras:** select All cameras. Each feed has its own retry/expand control.
+- **All cameras:** select All cameras to refresh availability and show only online
+  cameras. Feeds that fail to connect or stop working disappear, and the remaining
+  tiles resize. If none are available, the app returns to the camera list with a
+  message. Use Refresh or All cameras again to check for newly available cameras.
+  Single-camera and Two cameras views retain their retry/expand controls.
 - **Sound:** in multi-camera view, use Sound at the top right and choose a camera
   by name or Off. Only one source is audible. Use sound on a tile is a shortcut.
 - **Remote:** arrows move focus, OK selects, Back closes a menu/view. Returning
@@ -208,8 +212,10 @@ an issue. Do not attach account responses, HAR captures or unredacted screenshot
 - **Video setup failure:** the app restricts H.264 negotiation and corrects a
   sendrecv response to a receive-only offer. This fixed Cam OG on the tested TV;
   other devices/firmware may still fail. Do not assume every WebRTC TV works.
-- **Only some tiles work:** try a single camera, then two. TV decoder/memory and
-  plan limits can constrain simultaneous streams. Failed feeds have Retry.
+- **A camera is missing from All cameras:** offline or failed feeds are excluded.
+  Open it individually from the camera list to see its error, or choose All
+  cameras again to refresh availability. TV decoder/memory and plan limits can
+  constrain simultaneous streams; try a single camera, then two.
 - **No audio:** choose a source, confirm the camera has audio enabled, and check
   TV volume. Selecting a source cannot create audio on a silent camera.
 

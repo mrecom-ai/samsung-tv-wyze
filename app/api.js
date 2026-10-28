@@ -87,7 +87,7 @@
     }).then(function (d) {
       if (!d.data || !Array.isArray(d.data.device_list)) throw new Error('Wyze did not return a camera list.');
       return d.data.device_list.filter(function (c) { return c.product_type === 'Camera'; }).map(function (c) {
-        return {mac:c.mac, model:c.product_model, name:c.nickname || 'Camera', online:c.conn_state === 1};
+        return {mac:c.mac, model:c.product_model, name:c.nickname || 'Camera', online:Number(c.conn_state) === 1};
       });
     });
   };

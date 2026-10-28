@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var api = new WyzeAPI(), screen = 'login', selected = null, busy = false;
+  var api = new WyzeAPI(), screen = 'login', selected = null, busy = false, cameraRequest=0, allRequest=0;
   var sessionKey = 'camera-view-session-v1';
   function fitScreen() {
     var scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
@@ -11,7 +11,7 @@
   function el(id) { return document.getElementById(id); }
   function status(message, error) { el('status').textContent = message; el('status').className = error ? 'error' : ''; }
   var stream = new CameraStream(el('video'), status);
-  var wall = new CameraWall(el('wallGrid'), api, openCamera,function(index,camera){el('wallSound').textContent='Sound: '+(camera?camera.name:'Off');}), cameraList = [], choosingTwo = false, chosen = [], audioOpen=false;
+  var wall = new CameraWall(el('wallGrid'), api, openCamera,function(index,camera){el('wallSound').textContent='Sound: '+(camera?camera.name:'Off');},function(cameras){if(screen!=='wall'||!wall.hideUnavailable)return;if(audioOpen)closeAudioPicker();if(!cameras.length){backToCameras();status('No cameras are available right now. Try Refresh.');}else el('wallTitle').textContent='All cameras · '+cameras.length;}), cameraList = [], choosingTwo = false, chosen = [], audioOpen=false;
   function closeAudioPicker(){audioOpen=false;el('audioPicker').hidden=true;if(screen==='wall')el('wallSound').focus();}
   el('audioClose').onclick=closeAudioPicker;
   el('wallSound').onclick=function(){
@@ -43,8 +43,9 @@
   }
   function clearFields() { ['password','keyid','apikey','code'].forEach(function (id) { el(id).value = ''; }); }
   function loadCameras() {
-    status('Loading cameras…'); el('refresh').disabled = true;
+    var request=++cameraRequest;status('Loading cameras…'); el('refresh').disabled = true;
     return api.cameras().then(function (cameras) {
+      if(request!==cameraRequest||document.hidden)return null;
       save(); show('cameras');cameraList=cameras;choosingTwo=false;chosen=[];updateSelection();
       var grid = el('grid'); grid.textContent = '';
       cameras.forEach(function (camera) {
@@ -57,8 +58,8 @@
         }; grid.appendChild(b);
       });
       status(cameras.length ? 'Choose a camera.' : 'No cameras were returned for this account.');
-      (grid.querySelector('button') || el('refresh')).focus();
-    }).catch(function (e) { status(e.message, true); }).then(function () { el('refresh').disabled = false; });
+      (grid.querySelector('button') || el('refresh')).focus();return cameras;
+    }).catch(function (e) { if(request===cameraRequest)status(e.message, true);return null; }).then(function (cameras) { el('refresh').disabled = false;return cameras; });
   }
   function updateSelection(){
     el('two').hidden=choosingTwo;el('all').hidden=choosingTwo;el('refresh').hidden=choosingTwo;
@@ -69,8 +70,8 @@
   el('two').onclick=function(){choosingTwo=true;chosen=[];updateSelection();var b=el('grid').querySelector('button');if(b)b.focus();};
   function resetSelection(){choosingTwo=false;chosen=[];Array.prototype.forEach.call(el('grid').querySelectorAll('button'),function(b){b.classList.remove('selected');b.removeAttribute('aria-pressed');});updateSelection();}
   el('cancelSelection').onclick=function(){resetSelection();status('Choose a camera.');el('two').focus();};
-  function openWall(cameras){stream.stop();selected=null;resetSelection();show('wall');el('wallTitle').textContent=cameras.length===2?'Two cameras':'All cameras · '+cameras.length;status('');wall.start(cameras);el('wallBack').focus();}
-  el('all').onclick=function(){openWall(cameraList);};el('watchSelected').onclick=function(){if(chosen.length===2)openWall(chosen.slice());};el('wallBack').onclick=backToCameras;
+  function openWall(cameras,options){stream.stop();selected=null;resetSelection();show('wall');el('wallTitle').textContent=cameras.length===2?'Two cameras':'All cameras · '+cameras.length;status('');wall.start(cameras,options);el('wallBack').focus();}
+  el('all').onclick=function(){var request=++allRequest;el('all').disabled=true;loadCameras().then(function(cameras){if(request!==allRequest||document.hidden||screen!=='cameras')return;if(!cameras)return;var available=cameras.filter(function(c){return c.online===true;});if(!available.length){status('No cameras are available right now. Try Refresh.');return;}openWall(available,{hideUnavailable:true});}).then(function(){if(request===allRequest)updateSelection();});};el('watchSelected').onclick=function(){if(chosen.length===2)openWall(chosen.slice());};el('wallBack').onclick=backToCameras;
   function authResult(result) {
     if (result.complete) { clearFields(); busy = false; el('submit').disabled = false; return loadCameras(); }
     if (result.mfa) { show('mfa'); status('Verification required.'); el('mfahelp').textContent = result.mfa; el('code').value = ''; el('code').focus(); }
@@ -92,15 +93,15 @@
     show('player'); el('cameraTitle').textContent = camera.name; el('video').muted = true; el('audio').textContent = 'Sound off'; el('back').focus(); status('Requesting live view…');
     api.stream(camera).then(function (params) { save(); if (screen === 'player' && selected === camera) stream.start(params); }).catch(function (e) { if (screen === 'player') status(e.message, true); }).then(function () { busy = false; });
   }
-  function backToCameras() { closeAudioPicker();stream.stop();wall.stop(); selected = null; show('cameras');updateSelection(); if(!choosingTwo)status('Choose a camera.'); (el('grid').querySelector('button') || el('refresh')).focus(); }
+  function backToCameras() { allRequest++;closeAudioPicker();stream.stop();wall.stop(); selected = null; show('cameras');updateSelection(); if(!choosingTwo)status('Choose a camera.'); (el('grid').querySelector('button') || el('refresh')).focus(); }
   el('back').onclick = backToCameras;
   el('retry').onclick = function () { if (selected) openCamera(selected); };
   el('refresh').onclick = loadCameras;
   el('audio').onclick = function () { var v = el('video'); v.muted = !v.muted; el('audio').textContent = v.muted ? 'Sound off' : 'Sound on'; var p = v.play(); if (p && p.catch) p.catch(function () { status('The TV could not play this stream.', true); }); };
-  el('video').onplaying = function () { clearTimeout(stream.timer); if (screen === 'player') status('Live'); };
+  el('video').onplaying = function () { clearTimeout(stream.timer); if (screen === 'player'&&el('video').videoWidth>0) status('Live'); };
   el('video').onerror = function () { if (screen === 'player') { stream.stop(); status('The TV could not decode this camera’s video.', true); } };
   el('signout').onclick = function () { stream.stop();wall.stop(); api.clear(); clearFields(); try { localStorage.removeItem(sessionKey); } catch (_) {} show('login'); status('Signed out.'); el('email').focus(); };
-  document.addEventListener('visibilitychange', function () { if (document.hidden && (screen === 'player'||screen==='wall')) backToCameras(); });
+  document.addEventListener('visibilitychange', function () { if(document.hidden){cameraRequest++;allRequest++;if(screen==='player'||screen==='wall')backToCameras();}else if(screen==='cameras')loadCameras(); });
   window.addEventListener('pagehide', function () { stream.stop();wall.stop(); if (provisioning) provisioning.stop(); api.pending = null; clearFields(); });
   // Spatial navigation keeps D-pad movement predictable; native TV IME owns
   // left/right while editing and Enter is left to the input/IME or form.
