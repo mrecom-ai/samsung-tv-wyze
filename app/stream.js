@@ -6,12 +6,17 @@
   function CameraStream(video, status) { this.video = video; this.status = status; this.generation = 0; }
   CameraStream.prototype.stop = function () {
     this.generation += 1; clearTimeout(this.timer);
+    if(this.lake){this.lake.stop();this.lake=null;}
     if (this.ws) { this.ws.onclose = null; this.ws.onerror = null; this.ws.onmessage = null; this.ws.close(); this.ws = null; }
     if (this.pc) { this.pc.ontrack = null; this.pc.onicecandidate = null; this.pc.onconnectionstatechange = null; this.pc.close(); this.pc = null; }
     this.video.pause(); this.video.srcObject = null;
   };
   CameraStream.prototype.start = function (params) {
     this.stop();
+    if(params.provider==='lake'){
+      if(!root.CameraLakeStream)throw new Error('This camera needs the updated player.');
+      this.lake=new root.CameraLakeStream(this.video,this.status);this.lake.start(params);return;
+    }
     var self = this, gen = self.generation, pending = [], answering = false;
     if (!root.RTCPeerConnection) throw new Error('This TV does not expose WebRTC playback to apps.');
     var pc = new root.RTCPeerConnection({iceServers:params.iceServers}); self.pc = pc;
@@ -51,6 +56,9 @@
     };
     ws.onmessage = function (e) {
       if (!current()) return;
+      // Direct Kinesis signaling may send an empty keepalive frame. It is not
+      // an SDP/ICE envelope and must not tear down an otherwise valid session.
+      if(typeof e.data==='string'&&!e.data.trim())return;
       try {
         var env = JSON.parse(e.data), type = env.messageType || env.action;
         if (type === 'STATUS_RESPONSE') { fail('Wyze could not establish this camera session.'); return; }

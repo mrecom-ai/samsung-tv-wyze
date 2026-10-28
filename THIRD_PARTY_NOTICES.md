@@ -12,8 +12,17 @@ Original viewer code is MIT-licensed (see LICENSE).
   [dchest/tweetnacl-js](https://github.com/dchest/tweetnacl-js), public domain
   (CC0). Full license: `app/vendor/tweetnacl.LICENSE`.
 
+- Agora Web SDK NG **4.24.9** is bundled from the official `agora-rtc-sdk-ng`
+  npm distribution (MIT package metadata). Full notice:
+  `app/vendor/agora-rtc-sdk.LICENSE`. SDK log uploads are disabled before use.
+- XXTEA **1.1.5** is adapted from `xxtea-node` as a browser export, MIT.
+  Full license: `app/vendor/xxtea.LICENSE`.
+- The lake protocol was cross-checked against Wyze's public web-player assets and
+  [alphabin/ClaudeWyze4Sln](https://github.com/alphabin/ClaudeWyze4Sln/blob/main/WRITEUP.md).
+  Its implementation was used as a protocol reference; its player code is not bundled.
+
 The icon is an original geometric camera mark. No Wyze logo, commercial font,
-camera image, signing certificate, third-party binary SDK, or account credential
+camera image, signing certificate, account credential
 is distributed. Samsung, Tizen and Wyze are their respective owners' trademarks.
 This project is not affiliated with or endorsed by Samsung or Wyze.
 

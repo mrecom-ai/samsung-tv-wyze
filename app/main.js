@@ -11,13 +11,13 @@
   function el(id) { return document.getElementById(id); }
   function status(message, error) { el('status').textContent = message; el('status').className = error ? 'error' : ''; }
   var stream = new CameraStream(el('video'), status);
-  var wall = new CameraWall(el('wallGrid'), api, openCamera,function(index,camera){el('wallSound').textContent='Sound: '+(camera?camera.name:'Off');},function(cameras){if(screen!=='wall'||!wall.hideUnavailable)return;if(audioOpen)closeAudioPicker();if(!cameras.length){backToCameras();status('No cameras are available right now. Try Refresh.');}else el('wallTitle').textContent='All cameras · '+cameras.length;}), cameraList = [], choosingTwo = false, chosen = [], audioOpen=false;
+  var wall = new CameraWall(el('wallGrid'), api, openCamera,function(index,camera){el('wallSound').textContent='Sound: '+(camera?camera.name:'Off');},function(cameras,pending){if(screen!=='wall'||!wall.hideUnavailable)return;if(audioOpen)closeAudioPicker();el('wallSound').disabled=!cameras.length;if(!cameras.length&&!pending){backToCameras();status('No cameras are available right now. Try Refresh.');}else el('wallTitle').textContent=cameras.length?'All cameras · '+cameras.length+(pending?' · checking '+pending:''):'Checking cameras… ('+pending+')';}), cameraList = [], choosingTwo = false, chosen = [], audioOpen=false;
   function closeAudioPicker(){audioOpen=false;el('audioPicker').hidden=true;if(screen==='wall')el('wallSound').focus();}
   el('audioClose').onclick=closeAudioPicker;
   el('wallSound').onclick=function(){
     var choices=el('audioChoices');choices.textContent='';
     function add(label,index){var button=document.createElement('button');button.textContent=label;button.setAttribute('role','radio');button.setAttribute('aria-checked',String(wall.audioIndex===index));button.onclick=function(){wall.setAudio(index);closeAudioPicker();};choices.appendChild(button);}
-    add('Off',null);wall.items.forEach(function(item,index){add(item.camera.name,index);});
+    add('Off',null);wall.items.forEach(function(item,index){if(!wall.hideUnavailable||item.ready)add(item.camera.name,index);});
     audioOpen=true;el('audioPicker').hidden=false;(choices.querySelector('[aria-checked="true"]')||choices.querySelector('button')).focus();
   };
   var provisioning = null;
@@ -70,7 +70,7 @@
   el('two').onclick=function(){choosingTwo=true;chosen=[];updateSelection();var b=el('grid').querySelector('button');if(b)b.focus();};
   function resetSelection(){choosingTwo=false;chosen=[];Array.prototype.forEach.call(el('grid').querySelectorAll('button'),function(b){b.classList.remove('selected');b.removeAttribute('aria-pressed');});updateSelection();}
   el('cancelSelection').onclick=function(){resetSelection();status('Choose a camera.');el('two').focus();};
-  function openWall(cameras,options){stream.stop();selected=null;resetSelection();show('wall');el('wallTitle').textContent=cameras.length===2?'Two cameras':'All cameras · '+cameras.length;status('');wall.start(cameras,options);el('wallBack').focus();}
+  function openWall(cameras,options){stream.stop();selected=null;resetSelection();show('wall');el('wallTitle').textContent=cameras.length===2?'Two cameras':'All cameras · '+cameras.length;status('');el('wallSound').disabled=false;wall.start(cameras,options);el('wallBack').focus();}
   el('all').onclick=function(){var request=++allRequest;el('all').disabled=true;loadCameras().then(function(cameras){if(request!==allRequest||document.hidden||screen!=='cameras')return;if(!cameras)return;var available=cameras.filter(function(c){return c.online===true;});if(!available.length){status('No cameras are available right now. Try Refresh.');return;}openWall(available,{hideUnavailable:true});}).then(function(){if(request===allRequest)updateSelection();});};el('watchSelected').onclick=function(){if(chosen.length===2)openWall(chosen.slice());};el('wallBack').onclick=backToCameras;
   function authResult(result) {
     if (result.complete) { clearFields(); busy = false; el('submit').disabled = false; return loadCameras(); }

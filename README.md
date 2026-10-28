@@ -67,10 +67,12 @@ for the exact model name and availability.
 
 ## What has actually been tested
 
-- A **2025 Samsung U7900F running Tizen 9**, with **Wyze Cam OG** cameras.
+- A **2025 Samsung U7900F running Tizen 9**, with **Wyze Cam OG** (original and 2025 revision) and **Cam Pan v1** cameras.
 - Account sign-in, encrypted computer-to-TV setup, single/two/all-camera views,
   and selecting a camera's sound or Off were confirmed on the TV.
 - Multi-camera capacity depends on your TV, network, cameras and Wyze plan.
+  Layout/navigation/sound-menu checks cover 7, 9, 10, 12, 16 and 25 fictional feeds;
+  this does not establish that the TV can decode that many live streams at once.
   Other models and older Tizen versions have not been verified. The app requires
   Tizen 9 or newer; Developer Mode alone does not establish compatibility.
 - The public installer/build tooling is based on the working personal build.
@@ -168,11 +170,14 @@ use a trusted LAN and do not forward its ports or the setup port to the internet
 
 - **Single camera:** select a camera tile. Back returns to the camera list.
 - **Two cameras:** select Two cameras, choose exactly two tiles, then Watch selected.
-- **All cameras:** select All cameras to refresh availability and show only online
-  cameras. Feeds that fail to connect or stop working disappear, and the remaining
+- **All cameras:** select All cameras to refresh camera capabilities and availability, then connect to the
+  reported-online cameras. A tile appears only after actual video starts; the
+  heading shows how many other cameras are still being checked. Feeds that fail to connect or stop working disappear, and the remaining
   tiles resize. If none are available, the app returns to the camera list with a
   message. Use Refresh or All cameras again to check for newly available cameras.
-  Single-camera and Two cameras views retain their retry/expand controls.
+  Up to 16 tiles fit on screen. Larger collections scroll vertically with the
+  remote; names and controls retain readable sizes. Single-camera and Two cameras
+  views retain their retry/expand controls.
 - **Sound:** in multi-camera view, use Sound at the top right and choose a camera
   by name or Off. Only one source is audible. Use sound on a tile is a shortcut.
 - **Remote:** arrows move focus, OK selects, Back closes a menu/view. Returning
@@ -185,11 +190,11 @@ use a trusted LAN and do not forward its ports or the setup port to the internet
 
 No analytics, third-party diagnostics collector, account details, camera images,
 device addresses, certificates or setup-session keys are included in this repo.
-The app sends account requests to Wyze and uses Wyze/AWS signaling and ICE/TURN
+The app sends account requests to Wyze and uses Wyze/AWS and Agora signaling and ICE/TURN
 services for video. This is **not** an offline/cloud-free viewer.
 
 Password, API key/ID and MFA details are held in memory for sign-in, not saved
-by the app. **Keep me signed in** saves access/refresh tokens in this app's TV
+by the app. **Keep me signed in** saves access/refresh tokens and the account ID needed to verify newer cameras in this app's TV
 storage; that storage is **not encrypted by this app**. Anyone with sufficient
 TV access may be able to read it. Uncheck the option for session-only access.
 **Sign out** removes the saved session. Wyze documents access/refresh token
@@ -212,6 +217,14 @@ an issue. Do not attach account responses, HAR captures or unredacted screenshot
 - **Video setup failure:** the app restricts H.264 negotiation and corrects a
   sendrecv response to a receive-only offer. This fixed Cam OG on the tested TV;
   other devices/firmware may still fail. Do not assume every WebRTC TV works.
+- **New camera / same model but different behavior:** discovery reads each camera's
+  advertised providers instead of assuming one transport per model. Original OG
+  cameras use the classic WebRTC path; the tested 2025 OG uses the encrypted
+  Agora/lake path. Refresh after adding a camera. When upgrading from an older
+  app that discarded the login account ID, sign out and sign in once to enable
+  the newer transport. Unknown transports fail clearly instead of being guessed.
+- **Cam Pan / blank signaling message:** empty Kinesis keepalive frames are ignored;
+  they must not terminate a valid stream. This was verified with Cam Pan v1.
 - **A camera is missing from All cameras:** offline or failed feeds are excluded.
   Open it individually from the camera list to see its error, or choose All
   cameras again to refresh availability. TV decoder/memory and plan limits can

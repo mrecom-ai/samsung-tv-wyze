@@ -29,6 +29,10 @@
   }
   function md5(s) { return root.CryptoJS.MD5(s).toString(); }
   function base() { return {app_ver:'wyze_developer_api', app_version:'wyze_developer_api', phone_id:'wyze_developer_api', sc:'wyze_developer_api', sv:'wyze_developer_api', ts:Date.now()}; }
+  function signedPost(url,payload,tokens){
+    var body=JSON.stringify(payload),secret=md5(tokens.access_token+'gbJojEBViLklgwyyDikx5ztSvKBXI5oU');
+    return post(url,body,{appId:'strv_e7f78e9e7738dc50',appInfo:'wyze_web_2.3.1',access_token:tokens.access_token,Authorization:tokens.access_token,signature2:root.CryptoJS.HmacMD5(body,secret).toString(),requestid:String(Date.now()%100000)});
+  }
   function WyzeAPI() { this.tokens = null; this.pending = null; }
   WyzeAPI.prototype.login = function (email, password, keyid, apikey) {
     this.pending = {email:email.trim(), password:md5(md5(md5(password))), keyid:keyid.trim(), apikey:apikey.trim()};
@@ -41,7 +45,7 @@
     Object.keys(extra || {}).forEach(function (k) { body[k] = extra[k]; });
     return post(AUTH + '/api/user/login', body, {Keyid:p.keyid, Apikey:p.apikey}).then(function (d) {
       if (d.access_token && d.refresh_token) {
-        self.tokens = {access_token:d.access_token, refresh_token:d.refresh_token, obtained:Date.now()}; self.pending = null;
+        self.tokens = {access_token:d.access_token, refresh_token:d.refresh_token, user_id:d.user_id, obtained:Date.now()}; self.pending = null;
         return {complete:true};
       }
       if (d.mfa_options && d.mfa_options.indexOf('TotpVerificationCode') >= 0) {
@@ -72,7 +76,7 @@
     p.refresh_token = self.tokens.refresh_token;
     return post(API + '/app/user/refresh_token', p).then(function (d) {
       if (!d.data || !d.data.access_token || !d.data.refresh_token) throw new Error('Your session expired. Please sign out and sign in again.');
-      self.tokens = {access_token:d.data.access_token, refresh_token:d.data.refresh_token, obtained:Date.now()};
+      self.tokens = {access_token:d.data.access_token, refresh_token:d.data.refresh_token, user_id:d.data.user_id||self.tokens.user_id, obtained:Date.now()};
       return self.tokens;
     });
   };
@@ -80,7 +84,7 @@
     if (!this.tokens) return Promise.reject(new Error('Please sign in first.'));
     return Date.now() - this.tokens.obtained > 86400000 ? this.refresh() : Promise.resolve(this.tokens);
   };
-  WyzeAPI.prototype.cameras = function () {
+  WyzeAPI.prototype.legacyCameras = function () {
     return this.ready().then(function (tokens) {
       var p = base(); p.access_token = tokens.access_token;
       return post(API + '/app/v2/home_page/get_object_list', p);
@@ -91,7 +95,37 @@
       });
     });
   };
+  WyzeAPI.prototype.cameras = function(){
+    var self=this;
+    return this.ready().then(function(tokens){return signedPost('https://app-core.cloud.wyze.com/app/v4/home/get-home-devices',{nonce:Date.now(),device_category:'camera',env:''},tokens);}).then(function(d){
+      if(!d.data||!Array.isArray(d.data.device_list))throw new Error('Camera capabilities unavailable.');
+      return d.data.device_list.map(function(c){var p=c.device_param||{},providers=p.p2p&&p.p2p.providers||[];return {mac:c.device_id,model:c.device_model,name:c.nickname||c.device_nick_name||'Camera',online:Number(c.property&&c.property['iot-device::iot-state'])===1,providers:providers.slice(),firmware:p.firmware_version||'',capabilitiesKnown:true};});
+    }).catch(function(){return self.legacyCameras();});
+  };
+  WyzeAPI.prototype.renewLake = function(camera,uid){
+    return this.ready().then(function(tokens){return signedPost('https://app.wyzecam.com/app/v4/wcsa/renew-token',{nonce:Date.now(),device_id:camera.mac,device_model:camera.model,uid:uid,expire_time:3600},tokens);}).then(function(d){if(!d.data||!d.data.rtc_token)throw new Error('Camera session renewal failed. Reconnect.');return d.data.rtc_token;});
+  };
+  WyzeAPI.prototype.lakeStream = function(camera){
+    var self=this,bytes=new Uint32Array(1);root.crypto.getRandomValues(bytes);var uid=10000+(bytes[0]%2000000000);
+    return this.ready().then(function(tokens){
+      if(!tokens.user_id)throw new Error('Sign out and sign in once to enable newer cameras. Your older saved session is missing the required account ID.');
+      return signedPost('https://app.wyzecam.com/app/v4/camera/get-streams',{device_list:[{device_id:camera.mac,device_model:camera.model,provider:'lake',parameters:{use_trickle:true}}],nonce:Date.now()},tokens).then(function(d){
+        var p=d.data&&d.data[0]&&d.data[0].params;
+        if(!p||!p.channel||[7,8].indexOf(Number(p.encryption_mode))<0||!p.encryption_key||!p.encryption_salt)throw new Error('Camera returned unsupported encrypted-stream settings.');
+        if(!root.CameraXXTEA)throw new Error('Camera encryption support is missing.');
+        function unwrap(value){var data=Uint8Array.from(root.atob(value),function(c){return c.charCodeAt(0);});return root.CameraXXTEA.decryptToString(data,tokens.access_token);}
+        var key,salt;
+        try{key=unwrap(p.encryption_key);salt=Uint8Array.from(root.atob(unwrap(p.encryption_salt)),function(c){return c.charCodeAt(0);});if(!key||salt.length!==32)throw new Error();}catch(_){throw new Error('Could not unlock the camera stream. Reconnect.');}
+        return signedPost('https://app.wyzecam.com/app/v4/wcsa/create-connection',{nonce:Date.now(),device_id:camera.mac,device_model:camera.model,mode:3,uid:uid,expire_time:3600,resolution:2},tokens).then(function(c){
+          var info=c.data;if(!info||!info.app_id||!info.rtc_token||!info.uid||!info.device_uid)throw new Error('Camera did not provide connection details.');
+          return {provider:'lake',appId:info.app_id,channel:p.channel,uid:info.uid,deviceUid:info.device_uid,userId:tokens.user_id,token:info.rtc_token,encryptionMode:Number(p.encryption_mode)===7?'aes-128-gcm2':'aes-256-gcm2',key:key,salt:salt,renew:function(){return self.renewLake(camera,info.uid);}};
+        });
+      });
+    });
+  };
   WyzeAPI.prototype.stream = function (camera) {
+    if(camera.providers&&camera.providers.indexOf('lake')>=0)return this.lakeStream(camera);
+    if(camera.capabilitiesKnown&&(!camera.providers||camera.providers.indexOf('webrtc')<0))return Promise.reject(new Error('This camera does not advertise a supported live-view connection.'));
     return this.ready().then(function (tokens) {
       var body = JSON.stringify({device_list:[{device_id:camera.mac, device_model:camera.model, provider:'webrtc', parameters:{use_trickle:true}}], nonce:String(Date.now())});
       var secret = md5(tokens.access_token + 'gbJojEBViLklgwyyDikx5ztSvKBXI5oU');

@@ -19,6 +19,8 @@ test('WebRTC uses receive-only tracks, queues ICE, and closes on leaving camera'
   assert.deepEqual(peers[0].transceivers,[['audio','recvonly'],['video','recvonly']]);
   assert.equal(peers[0].preferredCodecs.length,1);assert.ok(peers[0].preferredCodecs.every(c=>!String(c.sdpFmtpLine).includes('f4001f')),'exclude high 4:4:4 offer profiles');
   sockets[0].onopen();await tick();assert.equal(sockets[0].sent[0].action,'SDP_OFFER');
+  for(const data of ['', ' \r\n'])sockets[0].onmessage({data});
+  assert.equal(peers[0].closed,undefined,'empty Kinesis keepalives must not close the connection');assert.equal(sockets[0].closed,undefined);assert.ok(!statuses.some(s=>s[1]));
   const message=(type,p)=>({data:JSON.stringify({messageType:type,messagePayload:Buffer.from(JSON.stringify(p)).toString('base64')})});
   sockets[0].onmessage(message('ICE_CANDIDATE',{candidate:'candidate1'}));assert.equal(peers[0].candidates.length,0);
   sockets[0].onmessage(message('SDP_ANSWER',{type:'answer',sdp:'test-answer'}));await tick();assert.equal(peers[0].candidates.length,1);

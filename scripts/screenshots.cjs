@@ -43,7 +43,7 @@ async function main() {
       const url = new URL(route.request().url());
       if (url.origin !== origin) return route.abort();
       if (url.pathname === '/api.js') return route.fulfill({contentType:'text/javascript',body:`window.WyzeAPI=function(){this.tokens=null;};WyzeAPI.prototype.cameras=function(){return Promise.resolve(${JSON.stringify(cameras)});};WyzeAPI.prototype.stream=function(camera){return Promise.resolve({demo:${JSON.stringify(cameras.map(c=>c.mac))}.indexOf(camera.mac)});};WyzeAPI.prototype.clear=function(){this.tokens=null;};`});
-      if (url.pathname === '/stream.js') return route.fulfill({contentType:'text/javascript',body:`window.CameraStream=function(video,status){this.stop=function(){};this.start=function(params){video.poster='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(${JSON.stringify(cameras.map((_,i)=>scene(i)))}[params.demo]);status('Demo scene · no live video');};};HTMLMediaElement.prototype.play=function(){return Promise.resolve();};`});
+      if (url.pathname === '/stream.js') return route.fulfill({contentType:'text/javascript',body:`window.CameraStream=function(video,status){this.stop=function(){};this.start=function(params){video.poster='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(${JSON.stringify(cameras.map((_,i)=>scene(i)))}[params.demo]);status('Demo scene · no live video');Object.defineProperty(video,'videoWidth',{configurable:true,value:1280});if(video.onplaying)video.onplaying();};};HTMLMediaElement.prototype.play=function(){return Promise.resolve();};`});
       return route.continue();
     });
     async function capture(name) {

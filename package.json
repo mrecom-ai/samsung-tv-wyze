@@ -1,6 +1,6 @@
 {
   "name": "samsung-tv-wyze",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "private": true,
   "description": "An unofficial standalone Wyze camera viewer for Samsung Tizen TVs",
   "license": "MIT",

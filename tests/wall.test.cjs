@@ -29,15 +29,26 @@ test('named audio selection mutes previous feeds before enabling another, and Of
 test('All cameras excludes offline devices before requesting any streams',async()=>{
  const calls=[],s=setup({stream:c=>{calls.push(c.name);return Promise.resolve({url:c.name});}});
  s.wall.start([{name:'Down',online:false},{name:'Up',online:true}],{hideUnavailable:true});await tick();
- assert.equal(s.wall.items.length,1);assert.equal(s.container.children.length,1);assert.deepEqual(calls,['Up']);assert.equal(s.container.style.gridTemplateColumns,'repeat(1,1fr)');s.wall.stop();
+ assert.equal(s.wall.items.length,1);assert.equal(s.container.children.length,1);assert.deepEqual(calls,['Up']);assert.equal(s.container.style.gridTemplateColumns,'repeat(1,minmax(0,1fr))');s.wall.stop();
 });
 test('failed All-camera feeds are removed without skipping queued cameras or moving sound to another source',async()=>{
  const calls=[],s=setup({stream:c=>{calls.push(c.name);return c.name==='Failed'?Promise.reject(Error('unreachable')):Promise.resolve({url:c.name});}});
  s.wall.start([{name:'Failed',online:true},{name:'Good',online:true},{name:'Later',online:true}],{hideUnavailable:true});await tick();
  assert.deepEqual(Array.from(s.wall.items,i=>i.camera.name),['Good','Later']);s.timers.shift()();await tick();s.timers.shift()();await tick();assert.deepEqual(calls,['Failed','Good','Later']);
- s.wall.setAudio(0);s.wall.items[0].stream.status('lost',true);assert.equal(s.wall.items.length,1);assert.equal(s.wall.items[0].camera.name,'Later');assert.equal(s.wall.audioIndex,null);assert.equal(s.wall.items[0].video.muted,true);assert.equal(s.container.style.gridTemplateColumns,'repeat(1,1fr)');s.wall.stop();
+ s.wall.setAudio(0);s.wall.items[0].stream.status('lost',true);assert.equal(s.wall.items.length,1);assert.equal(s.wall.items[0].camera.name,'Later');assert.equal(s.wall.audioIndex,null);assert.equal(s.wall.items[0].video.muted,true);assert.equal(s.container.style.gridTemplateColumns,'repeat(1,minmax(0,1fr))');s.wall.stop();
 });
 test('an All-camera wall reports zero available feeds and closes stale callbacks safely',async()=>{
  const s=setup({stream:()=>Promise.resolve({url:'demo'})}),counts=[];s.wall.changed=c=>counts.push(c.length);
- s.wall.start([{name:'One',online:true}],{hideUnavailable:true});await tick();const stream=s.wall.items[0].stream;stream.status('timeout',true);assert.equal(s.container.children.length,0);assert.deepEqual(counts,[1,0]);stream.status('late failure',true);assert.equal(s.container.children.length,0);s.wall.stop();
+ s.wall.start([{name:'One',online:true}],{hideUnavailable:true});await tick();const stream=s.wall.items[0].stream;stream.status('timeout',true);assert.equal(s.container.children.length,0);assert.deepEqual(counts,[0,0]);stream.status('late failure',true);assert.equal(s.container.children.length,0);s.wall.stop();
+});
+
+test('large walls keep usable feed sizes and every camera remains reachable',async()=>{
+ const s=setup({stream:()=>Promise.resolve({url:'demo'})});
+ for(const count of [7,9,10,12,16,25]){s.wall.start(Array.from({length:count},(_,i)=>({name:'Camera '+i,online:true})),{hideUnavailable:true});await tick();s.wall.items.forEach(i=>{i.video.videoWidth=1920;i.video.onplaying();});assert.equal(s.wall.items.length,count);assert.equal(s.container.children.length,count);assert.equal(s.container.style.gridTemplateColumns,'repeat('+(count<=9?3:4)+',minmax(0,1fr))');assert.match(s.container.style.gridTemplateRows,/minmax\(200px,1fr\)/);s.wall.stop();}
+});
+
+test('All cameras displays only feeds with real video, without closing during preflight',async()=>{
+ const s=setup({stream:()=>Promise.resolve({url:'demo'})}),changes=[];s.wall.changed=(c,p)=>changes.push([c.length,p]);
+ s.wall.start([{name:'Ready',online:true},{name:'Unreachable',online:true}],{hideUnavailable:true});await tick();assert.deepEqual(changes,[[0,2]]);assert.ok(s.wall.items.every(i=>i.tile.hidden));
+ const first=s.wall.items[0];first.video.videoWidth=1920;first.video.onplaying();assert.equal(first.tile.hidden,false);assert.deepEqual(changes.at(-1),[1,1]);s.wall.items[1].stream.status('No video',true);assert.deepEqual(changes.at(-1),[1,0]);assert.equal(s.wall.items.length,1);s.wall.stop();
 });

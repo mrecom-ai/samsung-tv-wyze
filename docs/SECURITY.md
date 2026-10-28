@@ -15,15 +15,16 @@ undocumented Wyze video endpoint and may need changes if Wyze changes it.
 ## Account and video
 
 1. The TV sends its account/API sign-in request over HTTPS to Wyze.
-2. It receives session tokens, discovers account cameras, and requests WebRTC
-   signaling parameters through Wyze. Authentication is not bypassed.
-3. Video uses WebRTC/DTLS-SRTP with Wyze/AWS signaling and ICE/TURN as provided
+2. It receives session tokens, discovers camera capabilities, and requests the appropriate
+   classic WebRTC or Agora/lake signaling parameters through Wyze. Authentication is not bypassed.
+3. Video uses WebRTC/DTLS-SRTP with Wyze/AWS or Agora signaling and ICE/TURN as provided
    by Wyze. Media may be relayed; do not describe it as LAN-only or offline.
+   Lake media keys are unwrapped in memory; Agora log uploads are disabled.
 4. The app never asks for microphone/camera capture and adds no outgoing media
    tracks. Only the selected video element has unmuted sound.
 
 API credentials/password/MFA details are transient. Optional saved access and
-refresh tokens are stored in TV localStorage without app-level encryption.
+refresh tokens plus the required login account ID are stored in TV localStorage without app-level encryption.
 Sign out clears saved tokens; possession of a TV/root-level device access can
 expose local app storage. Treat a personalized signed widget as private too.
 
