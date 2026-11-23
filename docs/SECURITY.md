@@ -23,7 +23,11 @@ undocumented Wyze video endpoint and may need changes if Wyze changes it.
 4. The app never asks for microphone/camera capture and adds no outgoing media
    tracks. Only the selected video element has unmuted sound.
 
-API credentials/password/MFA details are transient. Optional saved access and
+Password/MFA details are transient. The optional Remember API keys setting saves
+only the API ID/key in a separate TV localStorage record. Sign-out retains that
+record; Forget API keys or disabling the setting removes it. These saved API keys
+are not encrypted by the app and can be exposed through developer/root access.
+No keys are embedded in source, the widget, or build overlays. Optional saved access and
 refresh tokens plus the required login account ID are stored in TV localStorage without app-level encryption.
 Sign out clears saved tokens; possession of a TV/root-level device access can
 expose local app storage. Treat a personalized signed widget as private too.

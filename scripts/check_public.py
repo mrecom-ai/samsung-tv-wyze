@@ -8,7 +8,7 @@ import hashlib, re
 from xml.etree import ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 TOP = {'README.md','LICENSE','THIRD_PARTY_NOTICES.md','.gitignore','package.json'}
-REVIEWED_PREVIEWS = {'docs/screenshots/all-cameras.png': 'de42122d276d7dc76951394e35e58907481aa2bbb24d84c143687f06ec3e338b', 'docs/screenshots/sign-in.png': '0adb40d671bd12005d9cf130440013455eb6f2004adc99a711daa9e64d2db469', 'docs/screenshots/sound-selection.png': '09d71bf1680f0f56fba756d41b33c6ba4fcc4a2e27e2d5480f2f3d4c43533433', 'docs/screenshots/two-cameras.png': 'c56c7399bac6536ac29ba2a8233202e1543f92ceecd43ef90c5c170d9ce646bf'}
+REVIEWED_PREVIEWS = {'docs/screenshots/all-cameras.png': '3f006d4085adfdef99ddc1e01b17c360b3dd33063306b6a3ad0c9d32c8563346', 'docs/screenshots/sign-in.png': '65e730960c15245f238cc9987b6f1bb979254840aff23d94dc7b508c40eebfe5', 'docs/screenshots/sound-selection.png': '8094b8a9d47b1b104595e848da2a06849eca0423f601ec171dd1a525d8123049', 'docs/screenshots/two-cameras.png': 'cb25d3fd135ed5a5d407fcfa5976554d18d1e99db4a6ed11a1bd3ceb582e817e'}
 def public_files():
     paths=[ROOT/name for name in sorted(TOP)]
     for directory in ['app','scripts','tests','docs','.github']:

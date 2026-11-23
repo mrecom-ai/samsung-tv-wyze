@@ -193,11 +193,16 @@ device addresses, certificates or setup-session keys are included in this repo.
 The app sends account requests to Wyze and uses Wyze/AWS and Agora signaling and ICE/TURN
 services for video. This is **not** an offline/cloud-free viewer.
 
-Password, API key/ID and MFA details are held in memory for sign-in, not saved
-by the app. **Keep me signed in** saves access/refresh tokens and the account ID needed to verify newer cameras in this app's TV
+Password and MFA details are held in memory for sign-in and never saved by
+the app. **Remember API keys on this TV** optionally saves only your API ID/key
+in TV localStorage so they are filled in next time. This option is separate
+from Keep me signed in. Saved API keys survive sign-out and app restarts; use
+**Forget API keys**, or uncheck Remember API keys, to remove them. Saved keys
+are not encrypted by this app; developer/root access to the TV can expose them. **Keep me signed in** saves access/refresh tokens and the account ID needed to verify newer cameras in this app's TV
 storage; that storage is **not encrypted by this app**. Anyone with sufficient
 TV access may be able to read it. Uncheck the option for session-only access.
-**Sign out** removes the saved session. Wyze documents access/refresh token
+**Sign out** removes the saved session while preserving API keys you chose to
+remember. You still need your Wyze email/password to sign in again. Wyze documents access/refresh token
 lifetimes and key revocation in its developer API guide.
 
 Read [security and data flow](docs/SECURITY.md) before contributing or reporting

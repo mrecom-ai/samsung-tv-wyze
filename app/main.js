@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   var api = new WyzeAPI(), screen = 'login', selected = null, busy = false, cameraRequest=0, allRequest=0;
-  var sessionKey = 'camera-view-session-v1';
+  var sessionKey = 'camera-view-session-v1', keyStore = new CameraKeyStore();
   function fitScreen() {
     var scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
     document.body.style.width = '1920px'; document.body.style.height = '1080px';
@@ -20,13 +20,29 @@
     add('Off',null);wall.items.forEach(function(item,index){if(!wall.hideUnavailable||item.ready)add(item.camera.name,index);});
     audioOpen=true;el('audioPicker').hidden=false;(choices.querySelector('[aria-checked="true"]')||choices.querySelector('button')).focus();
   };
+  function restoreApiKeys(){
+    var saved=keyStore.read();el('rememberApi').checked=!!saved;el('forgetKeys').hidden=!saved;
+    if(saved){el('keyid').value=saved.keyid;el('apikey').value=saved.apikey;}
+  }
+  function persistApiKeys(){
+    var opted=el('rememberApi').checked,pair={keyid:el('keyid').value,apikey:el('apikey').value},ok;
+    if(opted&&(!pair.keyid.trim()||!pair.apikey.trim()))return;
+    ok=opted?keyStore.save(pair):keyStore.forget();
+    el('forgetKeys').hidden=!keyStore.read();
+    el('keyStorageNote').textContent=ok?'Saved API keys stay after sign-out. Your password is never saved.':'The TV could not update saved API keys. Please try again.';
+  }
+  el('rememberApi').onchange=persistApiKeys;
+  el('forgetKeys').onclick=function(){
+    if(!keyStore.forget()){status('The TV could not remove saved API keys. Please try again.',true);return;}
+    el('keyid').value='';el('apikey').value='';el('rememberApi').checked=false;el('forgetKeys').hidden=true;status('API keys removed from this TV.');el('keyid').focus();
+  };
   var provisioning = null;
   el('receive').onclick = function () {
     if (provisioning) return;
     el('receive').disabled = true;
     provisioning = new CameraProvisioner(function (message, error) { status(message, error); }, function (data) {
       ['email','password','keyid','apikey'].forEach(function (id) { if (data[id]) el(id).value = data[id]; });
-      data = null; provisioning = null; el('receive').disabled = false;
+      persistApiKeys();data = null; provisioning = null; el('receive').disabled = false;
       status('Details received securely. Select Sign in.'); el('submit').focus();
     }, function () { provisioning = null; el('receive').disabled = false; });
     provisioning.start();
@@ -79,14 +95,14 @@
   el('authform').onsubmit = function (e) {
     e.preventDefault(); if (busy) return;
     if (!el('email').value || !el('password').value || !el('keyid').value.trim() || !el('apikey').value.trim()) { status('Enter your email, password, API ID and API key.', true); return; }
-    busy = true; el('submit').disabled = true; status('Signing in…');
+    persistApiKeys();busy = true; el('submit').disabled = true; status('Signing in…');
     api.login(el('email').value, el('password').value, el('keyid').value, el('apikey').value).then(authResult).catch(function (err) { status(err.message, true); }).then(function () { busy = false; el('submit').disabled = false; });
   };
   el('mfaform').onsubmit = function (e) {
     e.preventDefault(); if (busy) return; busy = true; status('Verifying…');
     api.verify(el('code').value).then(authResult).catch(function (err) { status(err.message, true); }).then(function () { busy = false; });
   };
-  function cancelMFA() { api.clear(); clearFields(); show('login'); status('Sign-in cancelled.'); el('email').focus(); }
+  function cancelMFA() { api.clear(); clearFields();restoreApiKeys(); show('login'); status('Sign-in cancelled.'); el('email').focus(); }
   el('cancelmfa').onclick = cancelMFA;
   function openCamera(camera) {
     if (busy) return; busy = true;closeAudioPicker(); wall.stop();selected = camera; stream.stop();
@@ -100,7 +116,7 @@
   el('audio').onclick = function () { var v = el('video'); v.muted = !v.muted; el('audio').textContent = v.muted ? 'Sound off' : 'Sound on'; var p = v.play(); if (p && p.catch) p.catch(function () { status('The TV could not play this stream.', true); }); };
   el('video').onplaying = function () { clearTimeout(stream.timer); if (screen === 'player'&&el('video').videoWidth>0) status('Live'); };
   el('video').onerror = function () { if (screen === 'player') { stream.stop(); status('The TV could not decode this camera’s video.', true); } };
-  el('signout').onclick = function () { stream.stop();wall.stop(); api.clear(); clearFields(); try { localStorage.removeItem(sessionKey); } catch (_) {} show('login'); status('Signed out.'); el('email').focus(); };
+  el('signout').onclick = function () { stream.stop();wall.stop(); api.clear(); clearFields(); try { localStorage.removeItem(sessionKey); } catch (_) {} restoreApiKeys();show('login'); status(keyStore.read()?'Signed out. Saved API keys are ready for your next sign-in.':'Signed out.'); el('email').focus(); };
   document.addEventListener('visibilitychange', function () { if(document.hidden){cameraRequest++;allRequest++;if(screen==='player'||screen==='wall')backToCameras();}else if(screen==='cameras')loadCameras(); });
   window.addEventListener('pagehide', function () { stream.stop();wall.stop(); if (provisioning) provisioning.stop(); api.pending = null; clearFields(); });
   // Spatial navigation keeps D-pad movement predictable; native TV IME owns
@@ -131,7 +147,7 @@
     });
     if (best) { e.preventDefault(); best.focus(); best.scrollIntoView({block:'nearest'}); }
   });
-  show('login'); el('email').focus();
+  restoreApiKeys();show('login'); el('email').focus();
   if (!window.RTCPeerConnection) status('This TV is missing WebRTC. Live camera playback may not be available.', true);
   try {
     var saved = JSON.parse(localStorage.getItem(sessionKey) || 'null');
